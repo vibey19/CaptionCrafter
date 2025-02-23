@@ -32,7 +32,6 @@ export default function FilePage({ params }) {
         } else {
           setIsTranscribing(false);
 
-          // ✅ Check if transcription and results exist before accessing items
           if (transcription?.results?.items) {
             setAwsTranscriptionItems(
               clearTranscriptionItems(transcription.results.items)
@@ -42,7 +41,7 @@ export default function FilePage({ params }) {
               "Transcription data is missing or incomplete:",
               transcription
             );
-            setAwsTranscriptionItems([]); // Set empty array to prevent errors
+            setAwsTranscriptionItems([]);
           }
         }
       })
@@ -78,7 +77,7 @@ export default function FilePage({ params }) {
     <>
       <Header />
       <div className="p-8 bg-white min-h-screen">
-        <div className="grid sm:grid-cols-2 gap-8 sm:gap-16">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 sm:gap-16">
           <div>
             <h2 className="text-2xl font-semibold text-gray-800 mb-4">
               Transcription Editor
@@ -92,7 +91,7 @@ export default function FilePage({ params }) {
             />
           </div>
 
-          <div>
+          <div className="flex flex-col sm:block">
             <h2 className="text-2xl font-semibold text-gray-800 mb-3">
               Result Video
             </h2>

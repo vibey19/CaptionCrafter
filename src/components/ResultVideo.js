@@ -2,6 +2,8 @@ import { useEffect, useState, useRef } from "react";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { toBlobURL, fetchFile } from "@ffmpeg/util";
 import { transcriptionItemsToSrt } from "@/libs/awsTranscriptionHelpers";
+
+// Font Imports
 import roboto from "./../fonts/Roboto-Regular.ttf";
 import openSans from "./../fonts/OpenSans-Regular.ttf";
 import lato from "./../fonts/Lato-Regular.ttf";
@@ -48,7 +50,6 @@ const fontOptions = {
 
 export default function ResultVideo({ filename, transcriptionItems }) {
   const videoUrl = "https://caption-crafter.s3.amazonaws.com/" + filename;
-  const [loaded, setLoaded] = useState(false);
   const [primaryColor, setPrimaryColor] = useState("#FFFFFF");
   const [outlineColor, setOutlineColor] = useState("#000000");
   const [font, setFont] = useState("Roboto");
@@ -80,13 +81,6 @@ export default function ResultVideo({ filename, transcriptionItems }) {
         await fetchFile(fontOptions[key])
       );
     }
-
-    setLoaded(true);
-  };
-
-  const toFFmpegColor = (rgb) => {
-    const bgr = rgb.slice(5, 7) + rgb.slice(3, 5) + rgb.slice(1, 3);
-    return "&H" + bgr + "&";
   };
 
   const transcode = async () => {
@@ -103,25 +97,13 @@ export default function ResultVideo({ filename, transcriptionItems }) {
       videoRef.current.onloadedmetadata = resolve;
     });
 
-    const duration = videoRef.current.duration;
-    ffmpeg.on("log", ({ message }) => {
-      const regexResult = /time=([0-9:.]+)/.exec(message);
-      if (regexResult?.[1]) {
-        const [hours, minutes, seconds] = regexResult[1].split(":"),
-          doneTotalSeconds = hours * 3600 + minutes * 60 + parseFloat(seconds);
-        setProgress(doneTotalSeconds / duration);
-      }
-    });
-
     await ffmpeg.exec([
       "-i",
       filename,
       "-preset",
       "ultrafast",
       "-vf",
-      `subtitles=subs.srt:fontsdir=/tmp:force_style='Fontname=${font},FontSize=${fontSize},MarginV=70,PrimaryColour=${toFFmpegColor(
-        primaryColor
-      )},OutlineColour=${toFFmpegColor(outlineColor)}'`,
+      `subtitles=subs.srt:fontsdir=/tmp:force_style='Fontname=${font},FontSize=${fontSize},MarginV=70,PrimaryColour=${primaryColor},OutlineColour=${outlineColor}'`,
       "output.mp4",
     ]);
 
@@ -134,14 +116,17 @@ export default function ResultVideo({ filename, transcriptionItems }) {
   };
 
   return (
-    <div className="flex flex-col justify-between">
-      <div className="flex items-center gap-4">
-        <label>
+    <div className="flex flex-col justify-between p-4">
+      {/* Controls Section (Responsive) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <label className="flex flex-col items-start">
           Font:
           <select
             value={font}
             onChange={(ev) => setFont(ev.target.value)}
-            className="custom-scrollbar"
+            className="mt-1 w-full border border-gray-300 rounded-md p-2 
+               shadow-sm focus:outline-none focus:ring-2 focus:ring-[#9AE66E]
+               max-h-48 overflow-y-auto"
           >
             {Object.keys(fontOptions).map((f) => (
               <option key={f} value={f}>
@@ -151,7 +136,7 @@ export default function ResultVideo({ filename, transcriptionItems }) {
           </select>
         </label>
 
-        <label>
+        <label className="flex flex-col items-start">
           Font Size:
           <input
             type="number"
@@ -159,28 +144,32 @@ export default function ResultVideo({ filename, transcriptionItems }) {
             max="50"
             value={fontSize}
             onChange={(ev) => setFontSize(ev.target.value)}
-            className="ml-2 w-16"
+            className="mt-1 w-full border border-gray-300 rounded-md p-2"
           />
         </label>
 
-        <label>
+        <label className="flex flex-col items-start">
           Primary Color:
           <input
             type="color"
             value={primaryColor}
             onChange={(ev) => setPrimaryColor(ev.target.value)}
+            className="mt-1 w-28 h-10"
           />
         </label>
 
-        <label>
+        <label className="flex flex-col items-start">
           Outline Color:
           <input
             type="color"
             value={outlineColor}
             onChange={(ev) => setOutlineColor(ev.target.value)}
+            className="mt-1 w-28 h-10"
           />
         </label>
       </div>
+
+      {/* Apply Captions Button */}
       <div className="mt-3">
         <button
           onClick={transcode}
@@ -190,6 +179,7 @@ export default function ResultVideo({ filename, transcriptionItems }) {
         </button>
       </div>
 
+      {/* Video Preview Section */}
       <div className="mt-5 border-2 border-dashed border-gray-400 rounded-md p-4 relative">
         {isLoading && (
           <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center">
@@ -199,14 +189,11 @@ export default function ResultVideo({ filename, transcriptionItems }) {
             </h3>
           </div>
         )}
-
-        <div className="flex items-center justify-center">
-          <video
-            ref={videoRef}
-            controls
-            className="w-auto h-auto max-h-[500px] rounded-md"
-          ></video>
-        </div>
+        <video
+          ref={videoRef}
+          controls
+          className="w-full max-h-[500px] rounded-md"
+        ></video>
       </div>
     </div>
   );
