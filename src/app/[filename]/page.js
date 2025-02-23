@@ -19,20 +19,37 @@ export default function FilePage({ params }) {
 
   function getTranscription() {
     setIsFetchingInfo(true);
-    axios.get("/api/transcribe?filename=" + filename).then((response) => {
-      setIsFetchingInfo(false);
-      const status = response.data?.status;
-      const transcription = response.data?.transcription;
-      if (status === "IN_PROGRESS") {
-        setIsTranscribing(true);
-        setTimeout(getTranscription, 3000);
-      } else {
-        setIsTranscribing(false);
-        setAwsTranscriptionItems(
-          clearTranscriptionItems(transcription.results.items)
-        );
-      }
-    });
+    axios
+      .get("/api/transcribe?filename=" + filename)
+      .then((response) => {
+        setIsFetchingInfo(false);
+        const status = response.data?.status;
+        const transcription = response.data?.transcription;
+
+        if (status === "IN_PROGRESS") {
+          setIsTranscribing(true);
+          setTimeout(getTranscription, 3000);
+        } else {
+          setIsTranscribing(false);
+
+          // ✅ Check if transcription and results exist before accessing items
+          if (transcription?.results?.items) {
+            setAwsTranscriptionItems(
+              clearTranscriptionItems(transcription.results.items)
+            );
+          } else {
+            console.warn(
+              "Transcription data is missing or incomplete:",
+              transcription
+            );
+            setAwsTranscriptionItems([]); // Set empty array to prevent errors
+          }
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching transcription:", error);
+        setIsFetchingInfo(false);
+      });
   }
 
   if (isFetchingInfo) {
@@ -50,8 +67,6 @@ export default function FilePage({ params }) {
       <div className="flex flex-col items-center justify-center min-h-screen text-gray-800">
         <h2 className="text-2xl font-semibold">Transcribing Your Video</h2>
         <p className="text-gray-500 mb-4">This may take a few moments.</p>
-
-        {/* Skeleton Loader */}
         <div className="w-80 h-5 bg-gray-300 animate-pulse rounded-md" />
         <div className="w-64 h-5 bg-gray-300 animate-pulse rounded-md mt-2" />
         <div className="w-72 h-5 bg-gray-300 animate-pulse rounded-md mt-2" />
